@@ -1,0 +1,3 @@
+[console_scripts]
+vwsd-clip-baseline = vwsd.vwsd_cl.vwsd_clip_baseline:main
+vwsd-ranking-metric = vwsd.vwsd_cl.vwsd_ranking_metric:main

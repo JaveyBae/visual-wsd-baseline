@@ -1,0 +1,17 @@
+README.md
+setup.cfg
+setup.py
+vwsd/__init__.py
+vwsd/data_loader.py
+vwsd/embedding_clip.py
+vwsd/embedding_clip_multilingual.py
+vwsd/plot.py
+vwsd.egg-info/PKG-INFO
+vwsd.egg-info/SOURCES.txt
+vwsd.egg-info/dependency_links.txt
+vwsd.egg-info/entry_points.txt
+vwsd.egg-info/requires.txt
+vwsd.egg-info/top_level.txt
+vwsd/vwsd_cl/__init__.py
+vwsd/vwsd_cl/vwsd_clip_baseline.py
+vwsd/vwsd_cl/vwsd_ranking_metric.py
