@@ -51,6 +51,45 @@ class CLIP:
         logging.info(f"\tContext length: {self.config['text_config']['max_position_embeddings']}")
         logging.info(f"\tVocab size: {self.config['text_config']['vocab_size']}")
 
+    def get_image_embedding(self, images: List or str, batch_size: int = None):
+        """ Get image embedding only
+        
+        :param images: a list of images to get embedding
+        :param batch_size: batch size
+        :return: image embedding tensor
+        """
+        images = [images] if type(images) is str else images
+        logging.debug(f'model inference on images: {len(images)}')
+        pil_images = [Image.open(i).convert("RGB") for i in images]
+        image_inputs = self.processor(images=pil_images, return_tensors="pt", padding=True)
+        batch_image_inputs = to_batch(image_inputs, batch_size=batch_size)
+        with torch.no_grad():
+            output_image_embedding = []
+            for i in batch_image_inputs:
+                output_image_embedding.append(
+                    self.model.get_image_features(**{k: v.to(self.device) for k, v in i.items()})
+                )
+            output_image_embedding = torch.cat(output_image_embedding)
+        return output_image_embedding
+    
+    def get_image_similarity(self, query_images: List or str, candidate_images: List or str, batch_size: int = None):
+        """ Get image-to-image similarity
+        
+        :param query_images: query image(s) 
+        :param candidate_images: candidate images to compare against
+        :param batch_size: batch size
+        :return: similarity matrix (query_size x candidate_size)
+        """
+        query_embedding = self.get_image_embedding(query_images, batch_size=batch_size)
+        candidate_embedding = self.get_image_embedding(candidate_images, batch_size=batch_size)
+        
+        logging.debug('compute image-to-image similarity')
+        sim = self.cos(
+            query_embedding.unsqueeze(1).repeat((1, len(candidate_embedding), 1)),
+            candidate_embedding.unsqueeze(0).repeat((len(query_embedding), 1, 1))
+        ) * 100  # query size x candidate size
+        return sim.cpu().numpy().tolist()
+
     def get_similarity(self, images: List or str, texts: List or str, batch_size: int = None):
         """ get embedding
 
@@ -64,17 +103,9 @@ class CLIP:
         """
         images = [images] if type(images) is str else images
         texts = [texts] if type(texts) is str else texts
-        logging.debug(f'model inference on images: {len(images)}')
-        pil_images = [Image.open(i).convert("RGB") for i in images]
-        image_inputs = self.processor(images=pil_images, return_tensors="pt", padding=True)
-        batch_image_inputs = to_batch(image_inputs, batch_size=batch_size)
-        with torch.no_grad():
-            output_image_embedding = []
-            for i in batch_image_inputs:
-                output_image_embedding.append(
-                    self.model.get_image_features(**{k: v.to(self.device) for k, v in i.items()})
-                )
-            output_image_embedding = torch.cat(output_image_embedding)
+        
+        output_image_embedding = self.get_image_embedding(images, batch_size=batch_size)
+        
         logging.debug(f'model inference on texts: {len(texts)}')
         text_inputs = self.processor(text=texts, return_tensors="pt", padding=True)
         batch_text_inputs = to_batch(text_inputs, batch_size=batch_size)
